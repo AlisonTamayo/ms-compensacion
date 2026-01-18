@@ -1,4 +1,4 @@
-package com.bancario.compensacion.service;
+package com.bancario.compensacion.servicio;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
@@ -8,11 +8,11 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 
 @Service
-public class SeguridadService {
+public class SeguridadServicio {
 
-    private RSAPrivateKey privateKey;
+    private final RSAPrivateKey privateKey;
 
-    public SeguridadService() {
+    public SeguridadServicio() {
         try {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
             kpg.initialize(2048);

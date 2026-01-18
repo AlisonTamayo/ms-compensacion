@@ -1,8 +1,9 @@
-package com.bancario.compensacion.controller;
+package com.bancario.compensacion.controlador;
 
-import com.bancario.compensacion.model.ArchivoLiquidacion;
-import com.bancario.compensacion.model.CicloCompensacion;
-import com.bancario.compensacion.service.CompensacionService;
+import com.bancario.compensacion.dto.ArchivoDTO;
+import com.bancario.compensacion.dto.CicloDTO;
+import com.bancario.compensacion.dto.PosicionDTO;
+import com.bancario.compensacion.servicio.CompensacionServicio;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,20 +19,19 @@ import java.util.List;
 @RequestMapping("/api/v1/compensacion")
 @RequiredArgsConstructor
 @Tag(name = "Microservicio de Compensación (G4)", description = "Gestión de Clearing, Settlement y Continuidad")
-public class CompensacionController {
+public class CompensacionControlador {
 
-    private final CompensacionService service;
+    private final CompensacionServicio service;
 
     @GetMapping("/ciclos")
     @Operation(summary = "Listar ciclos", description = "Obtiene el historial de todos los ciclos operativos.")
-    public ResponseEntity<List<CicloCompensacion>> listarCiclos() {
+    public ResponseEntity<List<CicloDTO>> listarCiclos() {
         return ResponseEntity.ok(service.listarCiclos());
     }
 
     @GetMapping("/ciclos/{cicloId}/posiciones")
     @Operation(summary = "Obtener detalle de posiciones", description = "Ver acumulados netos por banco")
-    public ResponseEntity<List<com.bancario.compensacion.model.PosicionInstitucion>> obtenerPosiciones(
-            @PathVariable Integer cicloId) {
+    public ResponseEntity<List<PosicionDTO>> obtenerPosiciones(@PathVariable Integer cicloId) {
         return ResponseEntity.ok(service.obtenerPosicionesCiclo(cicloId));
     }
 
@@ -60,7 +60,7 @@ public class CompensacionController {
 
     @PostMapping("/ciclos/{cicloId}/cierre")
     @Operation(summary = "EJECUTAR CIERRE DIARIO (Settlement)", description = "1. Valida Suma Cero. 2. Genera XML. 3. Firma Digital (JWS). 4. Cierra el ciclo actual. 5. Abre el siguiente ciclo arrastrando saldos (Continuidad).")
-    public ResponseEntity<ArchivoLiquidacion> cerrarCiclo(@PathVariable Integer cicloId) {
+    public ResponseEntity<ArchivoDTO> cerrarCiclo(@PathVariable Integer cicloId) {
         return ResponseEntity.ok(service.realizarCierreDiario(cicloId));
     }
 }

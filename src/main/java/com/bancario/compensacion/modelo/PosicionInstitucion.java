@@ -1,6 +1,5 @@
-package com.bancario.compensacion.model;
+package com.bancario.compensacion.modelo;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +9,6 @@ import java.math.BigDecimal;
 @Table(name = "posicioninstitucion")
 @Getter
 @Setter
-@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "ciclo" })
 public class PosicionInstitucion {
 
     @Id
@@ -40,7 +38,6 @@ public class PosicionInstitucion {
     private BigDecimal neto = BigDecimal.ZERO;
 
     public void recalcularNeto() {
-
         this.neto = this.saldoInicial.add(this.totalCreditos).subtract(this.totalDebitos);
     }
 }

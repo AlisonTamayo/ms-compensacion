@@ -1,6 +1,5 @@
-package com.bancario.compensacion.model;
+package com.bancario.compensacion.modelo;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +9,6 @@ import java.time.LocalDateTime;
 @Table(name = "ciclocompensacion")
 @Getter
 @Setter
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class CicloCompensacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

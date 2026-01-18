@@ -1,8 +1,10 @@
-package com.bancario.compensacion.controller;
+package com.bancario.compensacion.controlador;
 
-import com.bancario.compensacion.model.CicloCompensacion;
-import com.bancario.compensacion.service.CompensacionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.bancario.compensacion.dto.CicloDTO;
+import com.bancario.compensacion.servicio.CompensacionServicio;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,18 +13,19 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
-@CrossOrigin(origins = "*") 
-public class DashboardController {
+@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
+@Tag(name = "Monitor Dashboard", description = "Monitor de estado operacional y semáforos")
+public class DashboardControlador {
 
-    @Autowired
-    private CompensacionService service;
+    private final CompensacionServicio service;
 
     @GetMapping("/monitor")
+    @Operation(summary = "Monitor Sistema", description = "Endpoint para verificar el estado SEMÁFORO del clearing.")
     public ResponseEntity<Map<String, Object>> obtenerEstadoMonitor() {
         Map<String, Object> response = new HashMap<>();
-        
-      
-        CicloCompensacion ciclo = service.listarCiclos().stream()
+
+        CicloDTO ciclo = service.listarCiclos().stream()
                 .filter(c -> "ABIERTO".equals(c.getEstado()))
                 .findFirst()
                 .orElse(null);
@@ -37,7 +40,7 @@ public class DashboardController {
             response.put("colorSemaforo", "ROJO");
             response.put("mensaje", "Esperando inicio de operaciones");
         }
-        
+
         return ResponseEntity.ok(response);
     }
 }

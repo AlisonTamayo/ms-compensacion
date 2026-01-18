@@ -1,8 +1,13 @@
-package com.bancario.compensacion.service;
+package com.bancario.compensacion.servicio;
 
-import com.bancario.compensacion.model.*;
-import com.bancario.compensacion.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.bancario.compensacion.dto.ArchivoDTO;
+import com.bancario.compensacion.dto.CicloDTO;
+import com.bancario.compensacion.dto.PosicionDTO;
+import com.bancario.compensacion.mapper.CompensacionMapper;
+import com.bancario.compensacion.modelo.*;
+import com.bancario.compensacion.repositorio.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,17 +15,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
-public class CompensacionService {
+@RequiredArgsConstructor
+public class CompensacionServicio {
 
-    @Autowired
-    private CicloCompensacionRepository cicloRepo;
-    @Autowired
-    private PosicionInstitucionRepository posicionRepo;
-    @Autowired
-    private ArchivoLiquidacionRepository archivoRepo;
-    @Autowired
-    private SeguridadService seguridadService;
+    private final CicloCompensacionRepositorio cicloRepo;
+    private final PosicionInstitucionRepositorio posicionRepo;
+    private final ArchivoLiquidacionRepositorio archivoRepo;
+    private final SeguridadServicio seguridadServicio;
+    private final CompensacionMapper mapper;
 
     @Transactional
     public void acumularTransaccion(Integer cicloId, String bic, BigDecimal monto, boolean esDebito) {
@@ -58,8 +62,8 @@ public class CompensacionService {
     }
 
     @Transactional
-    public ArchivoLiquidacion realizarCierreDiario(Integer cicloId) {
-        System.out.println(">>> INICIANDO CIERRE DEL CICLO: " + cicloId);
+    public ArchivoDTO realizarCierreDiario(Integer cicloId) {
+        log.info(">>> INICIANDO CIERRE DEL CICLO: {}", cicloId);
 
         CicloCompensacion cicloActual = cicloRepo.findById(cicloId)
                 .orElseThrow(() -> new RuntimeException("Ciclo no encontrado"));
@@ -80,7 +84,7 @@ public class CompensacionService {
 
         String xml = generarXML(cicloActual, posiciones);
 
-        String firma = seguridadService.firmarDocumento(xml);
+        String firma = seguridadServicio.firmarDocumento(xml);
 
         ArchivoLiquidacion archivo = new ArchivoLiquidacion();
         archivo.setCiclo(cicloActual);
@@ -98,7 +102,7 @@ public class CompensacionService {
 
         iniciarSiguienteCiclo(cicloActual, posiciones);
 
-        return archivo;
+        return mapper.toDTO(archivo);
     }
 
     private void iniciarSiguienteCiclo(CicloCompensacion anterior, List<PosicionInstitucion> saldosAnteriores) {
@@ -113,31 +117,26 @@ public class CompensacionService {
             PosicionInstitucion posNueva = new PosicionInstitucion();
             posNueva.setCiclo(guardado);
             posNueva.setCodigoBic(posAnt.getCodigoBic());
-
             posNueva.setSaldoInicial(BigDecimal.ZERO);
-
             posNueva.setTotalDebitos(BigDecimal.ZERO);
             posNueva.setTotalCreditos(BigDecimal.ZERO);
             posNueva.recalcularNeto();
             posicionRepo.save(posNueva);
         }
-        System.out.println(">>> CICLO " + nuevo.getNumeroCiclo() + " INICIADO CORRECTAMENTE.");
+        log.info(">>> CICLO {} INICIADO CORRECTAMENTE.", nuevo.getNumeroCiclo());
     }
 
     private String generarXML(CicloCompensacion ciclo, List<PosicionInstitucion> posiciones) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-
         sb.append("<SettlementFile xmlns=\"http://bancario.switch/settlement/v1\">\n");
-
         sb.append("  <Header>\n");
         sb.append("    <MsgId>MSG-LIQ-").append(System.currentTimeMillis()).append("</MsgId>\n");
         sb.append("    <CycleId>").append(ciclo.getNumeroCiclo()).append("</CycleId>\n");
         sb.append("    <CreationDate>").append(LocalDateTime.now(java.time.ZoneOffset.UTC)).append("</CreationDate>\n");
         sb.append("    <TotalRecords>").append(posiciones.size()).append("</TotalRecords>\n");
         sb.append("  </Header>\n");
-
         sb.append("  <Transactions>\n");
         for (PosicionInstitucion p : posiciones) {
             sb.append("    <Tx>\n");
@@ -147,13 +146,12 @@ public class CompensacionService {
             sb.append("    </Tx>\n");
         }
         sb.append("  </Transactions>\n");
-
         sb.append("</SettlementFile>");
 
         return sb.toString();
     }
 
-    public List<CicloCompensacion> listarCiclos() {
+    public List<CicloDTO> listarCiclos() {
         List<CicloCompensacion> ciclos = cicloRepo.findAll();
         if (ciclos.isEmpty()) {
             CicloCompensacion primerCiclo = new CicloCompensacion();
@@ -164,10 +162,11 @@ public class CompensacionService {
             cicloRepo.save(primerCiclo);
             ciclos.add(primerCiclo);
         }
-        return ciclos;
+        return ciclos.stream().map(mapper::toDTO).toList();
     }
 
-    public List<PosicionInstitucion> obtenerPosicionesCiclo(Integer cicloId) {
-        return posicionRepo.findByCicloId(cicloId);
+    public List<PosicionDTO> obtenerPosicionesCiclo(Integer cicloId) {
+        List<PosicionInstitucion> posiciones = posicionRepo.findByCicloId(cicloId);
+        return mapper.toPosicionList(posiciones);
     }
 }
