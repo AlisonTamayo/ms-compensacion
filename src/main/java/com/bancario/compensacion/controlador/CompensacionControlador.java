@@ -59,8 +59,22 @@ public class CompensacionControlador {
     }
 
     @PostMapping("/ciclos/{cicloId}/cierre")
-    @Operation(summary = "EJECUTAR CIERRE DIARIO (Settlement)", description = "1. Valida Suma Cero. 2. Genera XML. 3. Firma Digital (JWS). 4. Cierra el ciclo actual. 5. Abre el siguiente ciclo arrastrando saldos (Continuidad).")
-    public ResponseEntity<ArchivoDTO> cerrarCiclo(@PathVariable Integer cicloId) {
-        return ResponseEntity.ok(service.realizarCierreDiario(cicloId));
+    @Operation(summary = "EJECUTAR CIERRE DIARIO (Settlement)", description = "Cierra ciclo actual y programa el siguiente con la duración especificada (o 10 min por defecto).")
+    public ResponseEntity<ArchivoDTO> cerrarCiclo(
+            @PathVariable Integer cicloId,
+            @RequestParam(required = false, defaultValue = "10") Integer proximoCicloEnMinutos) {
+        return ResponseEntity.ok(service.realizarCierreDiario(cicloId, proximoCicloEnMinutos));
+    }
+
+    @GetMapping("/reporte/pdf/{cicloId}")
+    @Operation(summary = "Descargar Reporte PDF", description = "Genera visualización imprimible del ciclo.")
+    public ResponseEntity<byte[]> descargarReportePDF(@PathVariable Integer cicloId) {
+        byte[] pdf = service.generarReportePDF(cicloId);
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=Reporte_Ciclo_" + cicloId + ".pdf")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }
